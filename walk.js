@@ -1,6 +1,13 @@
 const width = 1000;
 const height = 600;
-const segments = 4;
+
+/**
+ * @param {HTMLInputElement} el
+ */
+const reverseRangeValue = (el) => {
+  const {min, max, value} = el;
+  return +min + (max - value); // find dx and apply to other value
+}
 
 const randF = (max) => Math.random() * max;
 const randRad = () => randF(2 * Math.PI);
@@ -71,7 +78,8 @@ class WanderingVector {
 }
 
 const canvas = document.querySelector("canvas");
-const speedCtrl = document.querySelector('input[type="range"]');
+const speedCtrl = document.querySelector('input[name="speed"]');
+const segmentCtrl = document.querySelector('input[name="segments"]');
 const blankingCtrl = document.querySelector('input[type="checkbox"]');
 
 if (!canvas || !speedCtrl || !blankingCtrl) throw new Error("missing HTML");
@@ -107,6 +115,7 @@ function makeWalk() {
   let count = 0;
 
   const walk = () => {
+    const segments = +segmentCtrl.value;
     let color = "white";
     // change dominate direction every 5th; mark it with a red dot
     ++count;
@@ -124,9 +133,9 @@ function makeWalk() {
       line(...vector.start, ...vector.end);
     }
     dot(...vector.end, color);
-    setTimeout(walk, +speedCtrl.value)
+    setTimeout(walk, reverseRangeValue(speedCtrl))
   }
   return walk;
 }
 
-setTimeout(makeWalk(), +speedCtrl.value)
+setTimeout(makeWalk(), reverseRangeValue(speedCtrl))
