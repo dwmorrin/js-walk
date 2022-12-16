@@ -1,5 +1,6 @@
 const width = 1000;
 const height = 600;
+const segments = 4;
 
 const rand = (min, max) => Math.floor(Math.random() * max) + min;
 const coinToss = () => rand(0, 2) == 0;
@@ -26,14 +27,22 @@ class WanderingVector {
   keepInBounds() {
     if (this.x1 <= 0) {
       this.x1 = 20;
+      if (this.dominate === 'x' && this.direction === -1)
+        this.direction = 1;
     } else if (this.x1 >= this.width) {
       this.x1 = this.width - 20;
+      if (this.dominate === 'x' && this.direction === 1)
+        this.direction = -1;
     }
 
     if (this.y1 <= 0) {
       this.y1 = 20;
+      if (this.dominate === 'y' && this.direction === -1)
+        this.direction = 1;
     } else if (this.y1 >= this.height) {
       this.y1 = this.height - 20;
+      if (this.dominate === 'y' && this.direction === 1)
+        this.direction = -1;
     }
   }
 
@@ -100,16 +109,21 @@ function makeWalk() {
   let count = 0;
 
   const walk = () => {
-    vector.walk();
     let color = "white";
-    // change dominate direction every 4th; mark it with a red dot
-    if (++count % 4 === 0) {
+    // change dominate direction every 5th; mark it with a red dot
+    ++count;
+    if (count === segments + 1) {
+      // reset and pause (don't walk here)
       count = 0;
-      vector.wander();
       color = "red";
       if (blankingCtrl.checked)
         blank();
+      vector.wander();
     } else {
+      // mark the ends in red
+      if (count === segments)
+        color = "red";
+      vector.walk();
       line(...vector.start, ...vector.end);
     }
     dot(...vector.end, color);
