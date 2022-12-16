@@ -30,13 +30,18 @@ class WanderingVector {
     this.radius = rand(50, 150);
   }
 
-  wander() {
+  nextBearing() {
     // adjust bearing along a restricted range
     this.bearing += randF(Math.PI / 6) * (coinToss() ? 1 : -1);
     this.bearing %= 2 * Math.PI;
-    // get new radius
-    this.radius = rand(50, 150);
-    // test new coordinates; if we leave the bounds, rotate and try again
+  }
+
+  wander() {
+    // get new target
+    this.nextBearing();
+    this.nextRadius();
+    // convert to rect and test
+    // if we leave the bounds: rotate a bit, shrink a bit, and try again
     let x = -1;
     let y = -1;
     let spin = 0;
