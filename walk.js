@@ -16,7 +16,7 @@ const coinToss = () => rand(0, 2) == 0;
 
 class WanderingVector {
   constructor(x, y, width, height) {
-    this.bearing = randRad();
+    this.turn();
     this.nextRadius();
     this.x0 = width / 2;
     this.y0 = height / 2;
@@ -34,6 +34,11 @@ class WanderingVector {
     // adjust bearing along a restricted range
     this.bearing += randF(Math.PI / 6) * (coinToss() ? 1 : -1);
     this.bearing %= 2 * Math.PI;
+  }
+
+  turn() {
+    // unrestricted bearing change
+    this.bearing = randRad();
   }
 
   wander() {
@@ -128,6 +133,7 @@ function makeWalk() {
       // reset and pause (don't walk here)
       count = 0;
       color = "red";
+      vector.turn();
       if (blankingCtrl.checked)
         blank();
     } else {
