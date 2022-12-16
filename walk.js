@@ -5,33 +5,35 @@ const rand = (min, max) => Math.floor(Math.random() * max) + min;
 const coinToss = () => rand(0, 2) == 0;
 const randV = (min, max) => rand(min, max) * (coinToss() ? 1 : -1);
 
-class Vector {
+class WanderingVector {
   constructor(x, y, width, height) {
-    this.x = x;
-    this.y = y;
+    this.x0 = width / 2;
+    this.y0 = height / 2;
+    this.x1 = x;
+    this.y1 = y;
     this.width = width;
     this.height = height;
-    this.turn();
+    this.wander();
   }
 
-  turn() {
+  wander() {
     this.dominate = coinToss() ? 'x' : 'y';
     this.direction = coinToss() ? 1 : -1;
     this.min = rand(15, 60);
     this.max = rand(70, 150);
   }
 
-  normalize() {
-    if (this.x <= 0) {
-      this.x = 10;
-    } else if (this.x >= this.width) {
-      this.x = this.width - 10;
+  keepInBounds() {
+    if (this.x1 <= 0) {
+      this.x1 = 20;
+    } else if (this.x1 >= this.width) {
+      this.x1 = this.width - 20;
     }
 
-    if (this.y <= 0) {
-      this.y = 10;
-    } else if (this.y >= this.height) {
-      this.y = this.height - 10;
+    if (this.y1 <= 0) {
+      this.y1 = 20;
+    } else if (this.y1 >= this.height) {
+      this.y1 = this.height - 20;
     }
   }
 
@@ -40,14 +42,25 @@ class Vector {
   }
 
   side() {
-    return randV(this.min/3, this.max/3);
+    return randV(this.min / rand(1, 4), this.max / rand(1, 4));
   }
 
   walk() {
-    this.x += this.dominate === 'x' ? this.forward() : this.side();
-    this.y += this.dominate === 'y' ? this.forward() : this.side();
-    this.normalize();
+    this.x0 = this.x1;
+    this.y0 = this.y1;
+    this.x1 += this.dominate === 'x' ? this.forward() : this.side();
+    this.y1 += this.dominate === 'y' ? this.forward() : this.side();
+    this.keepInBounds();
   }
+
+  get start() {
+    return [this.x0, this.y0];
+  }
+
+  get end() {
+    return [this.x1, this.y1];
+  }
+
 }
 
 const canvas = document.querySelector("canvas");
@@ -63,41 +76,46 @@ function blank() {
   ctx.fillRect(0, 0, width, height);
 }
 
-function dot(x, y) {
+function dot(x, y, color = "white") {
   ctx.beginPath();
   ctx.arc(x, y, 10, 0, 2 * Math.PI);
   ctx.closePath();
+  ctx.fillStyle = color;
   ctx.fill();
+}
+
+function line(x0, y0, x1, y1, color = "white") {
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.strokeStyle = color;
+  ctx.stroke();
 }
 
 function makeWalk() {
   // initialize; create closure
-  ctx.fillStyle = "red";
-  const vector = new Vector(width / 2, height / 2, width, height);
-  dot(vector.x, vector.y);
+  const vector = new WanderingVector(width / 2, height / 2, width, height, ctx);
+  blank();
+  dot(...vector.start, "red");
   let count = 0;
 
   const walk = () => {
-    ctx.beginPath();
-    ctx.moveTo(vector.x, vector.y);
     vector.walk();
-    ctx.lineTo(vector.x, vector.y);
-    ctx.strokeStyle = "white";
-    ctx.stroke();
+    let color = "white";
+    // change dominate direction every 4th; mark it with a red dot
     if (++count % 4 === 0) {
       count = 0;
-      vector.turn();
+      vector.wander();
+      color = "red";
       if (blankingCtrl.checked)
         blank();
-      ctx.fillStyle = "red";
+    } else {
+      line(...vector.start, ...vector.end);
     }
-    else
-      ctx.fillStyle = "white";
-    dot(vector.x, vector.y);
+    dot(...vector.end, color);
     setTimeout(walk, +speedCtrl.value)
   }
   return walk;
 }
 
-blank();
 setTimeout(makeWalk(), +speedCtrl.value)
