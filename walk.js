@@ -2,64 +2,62 @@ const width = 1000;
 const height = 600;
 const segments = 4;
 
-const rand = (min, max) => Math.floor(Math.random() * max) + min;
+const randF = (max) => Math.random() * max;
+const randRad = () => randF(2 * Math.PI);
+const rand = (min, max) => Math.floor(randF(max)) + min;
 const coinToss = () => rand(0, 2) == 0;
-const randV = (min, max) => rand(min, max) * (coinToss() ? 1 : -1);
 
 class WanderingVector {
   constructor(x, y, width, height) {
+    this.bearing = randRad();
+    this.nextRadius();
     this.x0 = width / 2;
     this.y0 = height / 2;
     this.x1 = x;
     this.y1 = y;
     this.width = width;
     this.height = height;
-    this.wander();
+  }
+
+  nextRadius() {
+    this.radius = rand(50, 150);
   }
 
   wander() {
-    this.dominate = coinToss() ? 'x' : 'y';
-    this.direction = coinToss() ? 1 : -1;
-    this.min = rand(15, 60);
-    this.max = rand(70, 150);
-  }
-
-  keepInBounds() {
-    if (this.x1 <= 0) {
-      this.x1 = 20;
-      if (this.dominate === 'x' && this.direction === -1)
-        this.direction = 1;
-    } else if (this.x1 >= this.width) {
-      this.x1 = this.width - 20;
-      if (this.dominate === 'x' && this.direction === 1)
-        this.direction = -1;
+    // adjust bearing along a restricted range
+    this.bearing += randF(Math.PI / 6) * (coinToss() ? 1 : -1);
+    this.bearing %= 2 * Math.PI;
+    // get new radius
+    this.radius = rand(50, 150);
+    // test new coordinates; if we leave the bounds, rotate and try again
+    let x = -1;
+    let y = -1;
+    let spin = 0;
+    const spinDirection = coinToss() ? 1 : -1;
+    while (true) {
+      this.bearing += spin;
+      this.bearing %= 2 * Math.PI;
+      x = this.x1 + this.radius * Math.cos(this.bearing);
+      y = this.y1 + this.radius * Math.sin(this.bearing);
+      if (this.isInBounds(x, y))
+        break;
+      spin += spinDirection * Math.PI / 8;
+      this.radius *= .8;
     }
-
-    if (this.y1 <= 0) {
-      this.y1 = 20;
-      if (this.dominate === 'y' && this.direction === -1)
-        this.direction = 1;
-    } else if (this.y1 >= this.height) {
-      this.y1 = this.height - 20;
-      if (this.dominate === 'y' && this.direction === 1)
-        this.direction = -1;
-    }
-  }
-
-  forward() {
-    return rand(this.min, this.max) * this.direction;
-  }
-
-  side() {
-    return randV(this.min / rand(1, 4), this.max / rand(1, 4));
-  }
-
-  walk() {
+    // save last coordinates
     this.x0 = this.x1;
     this.y0 = this.y1;
-    this.x1 += this.dominate === 'x' ? this.forward() : this.side();
-    this.y1 += this.dominate === 'y' ? this.forward() : this.side();
-    this.keepInBounds();
+    // update new coordinates
+    this.x1 = x;
+    this.y1 = y;
+  }
+
+  isInBounds(x, y) {
+    if (x <= 10 || x >= this.width - 10)
+      return false;
+    if (y <= 10 || y >= this.height - 10)
+      return false;
+    return true;
   }
 
   get start() {
@@ -103,7 +101,7 @@ function line(x0, y0, x1, y1, color = "white") {
 
 function makeWalk() {
   // initialize; create closure
-  const vector = new WanderingVector(width / 2, height / 2, width, height, ctx);
+  const vector = new WanderingVector(width / 2, height / 2, width, height);
   blank();
   dot(...vector.start, "red");
   let count = 0;
@@ -118,12 +116,11 @@ function makeWalk() {
       color = "red";
       if (blankingCtrl.checked)
         blank();
-      vector.wander();
     } else {
       // mark the ends in red
       if (count === segments)
         color = "red";
-      vector.walk();
+      vector.wander();
       line(...vector.start, ...vector.end);
     }
     dot(...vector.end, color);
