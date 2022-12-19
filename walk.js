@@ -129,7 +129,7 @@ function makeWalk() {
     let color = "white";
     // change dominate direction every 5th; mark it with a red dot
     ++count;
-    if (count === segments + 1) {
+    if (count > segments) {
       // reset and pause (don't walk here)
       count = 0;
       color = "red";
